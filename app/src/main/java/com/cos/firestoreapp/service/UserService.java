@@ -27,71 +27,113 @@ public class UserService {
 
     private static final String TAG = "UserService";
     private FirebaseFirestore db;
-    private TextView tv;
-
+    private String collectionPath = "users";
 
     public UserService() {
-            db = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
     }
 
-    public void userreadTest(){
-        db.collection("users")
+    public void userRead(MyCallback myCallback) {
+        DocumentReference docRef = db.collection(collectionPath).document("9XLtCiyuYKdEuESjbIax");
+        docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+            @Override
+            public void onSuccess(DocumentSnapshot documentSnapshot) {
+                User user = documentSnapshot.toObject(User.class);
+                myCallback.back(user);
+            }
+        });
+    }
+
+    public void userReadAll(MyCallback myCallback) {
+        db.collection(collectionPath)
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-
-                        //List<User> users = task.getResult().toObjects(User.class);
-
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
                         List<User> users = new ArrayList<>();
-
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                User user = document.toObject(User.class);
-                                user.setId(document.getId());
-                                users.add(user);
-                            }
-                            Log.d(TAG, "onComplete: user : "+users);
-                        } else {
-                            Log.d(TAG, "Error getting documents: ", task.getException());
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            User user = document.toObject(User.class);
+                            users.add(user);
                         }
+                        myCallback.back(users);
+                    } else {
+                        Log.w(TAG, "Error getting documents.", task.getException());
                     }
                 });
     }
 
+    public void userDeleteField(MyCallback myCallback) {
 
-    public void userReadAll(MyCallback myCallback){
-        db.collection("users")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        DocumentReference docRef = db.collection("users").document("BJ");
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("phone", FieldValue.delete());
+        docRef.update(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                Log.d(TAG, "Field Delete Complete!");
+                Task task1 = docRef.get();
+                User user = (User)task1.getResult();
+                myCallback.back(user);
+            }
+        });
+    }
+
+    public void userSaveOrUpdate(MyCallback myCallback){
+
+        DocumentReference washingtonRef =
+                db.collection(collectionPath).document("n84w2RmMxCYneRzq8l9X");
+        Task a = washingtonRef.get();
+        String id = ((User)a.getResult()).getId();
+
+        User user = new User(id, "cos", "1234", "0102222");
+        db.collection("users").document("n84w2RmMxCYneRzq8l9X")
+                .set(user)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            List<User> users = new ArrayList<>();
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "DocumentSnapshot successfully written!");
 
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                User user = document.toObject(User.class);
-                                user.setId(document.getId());
-                                users.add(user);
-                            }
-                            Log.d(TAG, "onComplete: users : "+users);
-                            myCallback.back(users);
-                        } else {
-                            Log.w(TAG, "Error getting documents.", task.getException());
-                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error writing document", e);
                     }
                 });
     }
 
-    public void userDelete(){
-        db.collection("users").document("DC")
+
+
+    public void userUpdate(){
+        DocumentReference washingtonRef = db.collection("users").document("yeJHjl9eDxhqBTVvpz55");
+
+        // Set the "isCapital" field of the city 'DC'
+        washingtonRef
+                .update("phone", "0108888")
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "DocumentSnapshot successfully updated!");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error updating document", e);
+                    }
+                });
+    }
+
+
+
+
+    public void userDelete(String userId) {
+        db.collection(collectionPath).document(userId)
                 .delete()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
                         Log.d(TAG, "DocumentSnapshot successfully deleted!");
-
-
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -103,10 +145,9 @@ public class UserService {
     }
 
 
-
     public void userSave(MyCallback myCallback) {
-        String collectionPath = "users";
-        User user = new User(null,"qqqq", "1234", "0102222");
+
+        User user = new User(null, "qqqq", "1234", "0102222");
         // Add a new document with a generated ID
         db.collection(collectionPath)
                 .add(user)
@@ -114,7 +155,7 @@ public class UserService {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
                         Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
-                            idInit(documentReference, collectionPath, myCallback);
+                        idInit(documentReference, collectionPath, myCallback);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -126,7 +167,7 @@ public class UserService {
     }
 
 
-    public void idInit(DocumentReference documentReference, String collectionPath, MyCallback myCallback){
+    public void idInit(DocumentReference documentReference, String collectionPath, MyCallback myCallback) {
         DocumentReference washingtonRef =
                 db.collection(collectionPath).document(documentReference.getId());
 
@@ -139,9 +180,9 @@ public class UserService {
 
                         //////////////////////////////////////////////////////////////////////////////// 새로운 영역
                         DocumentReference docRef = db.collection(collectionPath).document(documentReference.getId());
-                        docRef.get().addOnSuccessListener(doc-> {
-                                User user = doc.toObject(User.class);
-                                myCallback.back(user);
+                        docRef.get().addOnSuccessListener(doc -> {
+                            User user = doc.toObject(User.class);
+                            myCallback.back(user);
                         });
                         ////////////////////////////////////////////////////////////////////////////////
 

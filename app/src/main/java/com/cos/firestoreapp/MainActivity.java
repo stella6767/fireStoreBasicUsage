@@ -27,6 +27,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity2";
     FirebaseFirestore db;
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,15 +58,30 @@ public class MainActivity extends AppCompatActivity {
 //        });
 
 
-        userService.userSave(user -> {
-            Log.d(TAG, "onCreate: user: "+user);
+//        userService.userSave(user -> {
+//            Log.d(TAG, "onCreate: user: "+user);
+//        });
+
+        userService.userRead(user->{
+            Log.d(TAG, "onCreate: user:"+user);
+            userId = ((User)user).getId();
+            Log.d(TAG, "onCreate: userId"+userId);
+            userService.userDelete(userId);
         });
 
 
-//        userService.userReadAll(v->{
-//            Log.d(TAG, "onCreate: useres:  "+v);
-//        });
+
+
+
+        userService.userReadAll(users->{
+            Log.d(TAG, "onCreate: useres:  "+users);
+        });
+
+
+
+
+
+
+
     }
-
-
 }
